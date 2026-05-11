@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow parents to read/write only their own child profiles
+    match /children/{childId} {
+      allow read, write: if request.auth.uid == resource.data.parentUid;
+      allow create: if request.auth.uid == request.resource.data.parentUid;
+    }
+
+    // Allow users to read/write their own progress records
+    match /progress/{childId} {
+      allow read, write: if request.auth.uid == get(/databases/(default)/documents/children/$(childId)).data.parentUid;
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

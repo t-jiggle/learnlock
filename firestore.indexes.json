@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "children",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "parentUid",
+          "order": "Ascending"
+        },
+        {
+          "fieldPath": "isActive",
+          "order": "Ascending"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
