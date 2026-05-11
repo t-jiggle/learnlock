@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:learnlock/features/auth/providers/auth_provider.dart';
 import 'package:learnlock/models/user_role.dart';

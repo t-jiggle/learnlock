@@ -1,7 +1,8 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:googleapis/familysharing/v1.dart' as familysharing;
 import 'package:http/http.dart' as http;
 import 'package:learnlock/models/supervised_account.dart';
 import 'package:learnlock/models/user_role.dart';
@@ -45,18 +46,23 @@ class FamilyLinkService {
     }
   }
 
+  static const _familyApi =
+      'https://familysharing.googleapis.com/v1/families/myFamily';
+
   /// Checks if the authenticated user is a parent (supervises children)
   Future<bool> _isParent(String accessToken) async {
     try {
-      final client = _createAuthenticatedClient(accessToken);
-      final api = familysharing.FamilysharingApi(client);
-
-      // Get family group - if user is parent, this succeeds
-      final family = await api.families.get('families/myFamily');
-      if (family == null) return false;
-
-      // Parent successfully retrieved family group
-      return true;
+      final response = await http.get(
+        Uri.parse(_familyApi),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+      if (response.statusCode != 200) return false;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      // User is parent if they have the PARENT role in the family
+      final members = data['members'] as List<dynamic>? ?? [];
+      final currentEmail = getCurrentUserEmail();
+      return members.any((m) =>
+          m is Map && m['role'] == 'PARENT' && m['email'] == currentEmail);
     } catch (e) {
       return false;
     }
@@ -65,25 +71,23 @@ class FamilyLinkService {
   /// Checks if the authenticated user is a child (is supervised)
   Future<bool> _isChild(String accessToken) async {
     try {
-      final client = _createAuthenticatedClient(accessToken);
-      final api = familysharing.FamilysharingApi(client);
-
-      // Try to get supervision status - if user is child, this succeeds
-      // This is determined by checking if user's account is in a family
-      // and they don't have PARENT role
-      final family = await api.families.get('families/myFamily');
-      if (family == null) return false;
-
-      // Check if current user is not the parent
-      // (presence in family but not parent = child)
-      return true;
+      final response = await http.get(
+        Uri.parse(_familyApi),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+      if (response.statusCode != 200) return false;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final members = data['members'] as List<dynamic>? ?? [];
+      final currentEmail = getCurrentUserEmail();
+      // Child is in the family with MEMBER role (not PARENT)
+      return members.any((m) =>
+          m is Map && m['role'] == 'MEMBER' && m['email'] == currentEmail);
     } catch (e) {
       return false;
     }
   }
 
   /// Fetches all supervised children for a parent
-  /// Returns list of SupervisedAccount from Family Link API
   Future<List<SupervisedAccount>> fetchSupervisedAccounts() async {
     try {
       final account = _googleSignIn.currentUser;
@@ -91,35 +95,29 @@ class FamilyLinkService {
 
       final auth = await account.authentication;
       final accessToken = auth.accessToken;
-
       if (accessToken == null) return [];
 
-      final client = _createAuthenticatedClient(accessToken);
-      final api = familysharing.FamilysharingApi(client);
+      final response = await http.get(
+        Uri.parse(_familyApi),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+      if (response.statusCode != 200) return [];
 
-      // Get family group
-      final family = await api.families.get('families/myFamily');
-      if (family == null || family.members == null) return [];
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final members = data['members'] as List<dynamic>? ?? [];
 
-      // Convert Family Link members to SupervisedAccounts
-      final supervised = <SupervisedAccount>[];
-      for (final member in family.members!) {
-        // Filter for child members (exclude self and parents)
-        if (member.role == 'MEMBER') {
-          supervised.add(
-            SupervisedAccount(
-              email: member.email ?? '',
-              familyLinkId: member.memberId ?? '',
-              displayName: member.displayName ?? 'Unknown',
-              photoUrl: member.profileImageUrl,
-              ageYears: _extractAge(member),
-              createdAt: DateTime.now(),
-            ),
-          );
-        }
-      }
-
-      return supervised;
+      return members
+          .whereType<Map<String, dynamic>>()
+          .where((m) => m['role'] == 'MEMBER')
+          .map((m) => SupervisedAccount(
+                email: m['email'] as String? ?? '',
+                familyLinkId: m['memberId'] as String? ?? '',
+                displayName: m['displayName'] as String? ?? 'Unknown',
+                photoUrl: m['profileImageUrl'] as String?,
+                ageYears: m['age'] as int? ?? 5,
+                createdAt: DateTime.now(),
+              ))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -130,31 +128,6 @@ class FamilyLinkService {
     return _auth.currentUser?.email;
   }
 
-  /// Create an authenticated HTTP client for API calls
-  /// (This is a simplified version - production should use proper auth flow)
-  _AuthenticatedClient _createAuthenticatedClient(String accessToken) {
-    return _AuthenticatedClient(accessToken);
-  }
-
-  /// Extract age from Family Link member object
-  int _extractAge(familysharing.FamilyMember member) {
-    // Age is typically stored in birthday or age field
-    // This is a placeholder - adjust based on actual Family Link API response
-    return member.age ?? 5;
-  }
-}
-
-/// Simple HTTP client that adds Authorization header
-class _AuthenticatedClient extends http.BaseClient {
-  final String _accessToken;
-
-  _AuthenticatedClient(this._accessToken);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    request.headers['Authorization'] = 'Bearer $_accessToken';
-    return super.send(request);
-  }
 }
 
 final familyLinkServiceProvider = Provider<FamilyLinkService>((ref) {

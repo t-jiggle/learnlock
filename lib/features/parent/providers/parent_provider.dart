@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:learnlock/features/auth/providers/auth_provider.dart';
-import 'package:learnlock/features/auth/providers/family_link_provider.dart';
 import 'package:learnlock/models/app_settings.dart';
 import 'package:learnlock/models/child_profile.dart';
 import 'package:learnlock/models/progress_record.dart';
