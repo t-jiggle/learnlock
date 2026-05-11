@@ -76,10 +76,31 @@ class FirebaseService {
     });
   }
 
-  Future<void> consumeScreenTime(String childId) async {
-    await _children.doc(childId).update({
-      'screenTimeExpiresAt': null,
-    });
+  Future<ChildProfile?> getChildByGoogleAccountId(String googleAccountId) async {
+    final snap = await _children
+        .where('googleAccountId', isEqualTo: googleAccountId)
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) return null;
+    return ChildProfile.fromFirestore(snap.docs.first);
+  }
+
+  Future<ChildProfile> linkSupervizedAccount(
+    String childGoogleAccountId,
+    String childFamilyLinkId,
+    String parentUid,
+    ChildProfile baseProfile,
+  ) async {
+    final profile = baseProfile.copyWith(
+      googleAccountId: childGoogleAccountId,
+      familyLinkId: childFamilyLinkId,
+      linkedType: LinkedAccountType.familyLink,
+    );
+
+    await _children.add(profile.toFirestore());
+    return profile;
   }
 
   // ---- Progress Records ----

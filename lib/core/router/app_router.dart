@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:learnlock/features/auth/providers/auth_provider.dart';
+import 'package:learnlock/features/auth/providers/user_role_provider.dart';
 import 'package:learnlock/features/auth/screens/login_screen.dart';
 import 'package:learnlock/features/child/screens/child_home_screen.dart';
 import 'package:learnlock/features/child/screens/learning_session_screen.dart';
@@ -10,20 +11,41 @@ import 'package:learnlock/features/parent/screens/child_setup_screen.dart';
 import 'package:learnlock/features/parent/screens/settings_screen.dart';
 import 'package:learnlock/features/parent/screens/permissions_screen.dart';
 import 'package:learnlock/models/child_profile.dart';
+import 'package:learnlock/models/user_role.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  final userRole = ref.watch(userRoleProvider);
 
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
       final isLoggedIn = authState.valueOrNull != null;
-      final isLoading = authState.isLoading;
+      final isLoading = authState.isLoading || userRole.isLoading;
       final onLoginPage = state.matchedLocation == '/login';
 
       if (isLoading) return null;
+
       if (!isLoggedIn && !onLoginPage) return '/login';
-      if (isLoggedIn && onLoginPage) return '/parent';
+      if (isLoggedIn && onLoginPage) {
+        // Route based on user role
+        final role = userRole.valueOrNull;
+        if (role == UserRole.child) return '/child';
+        return '/parent';
+      }
+
+      if (isLoggedIn && !onLoginPage) {
+        // User already on a page, make sure they're on the right one
+        final role = userRole.valueOrNull;
+        if (role == UserRole.child && state.matchedLocation.startsWith('/parent')) {
+          return '/child';
+        } else if (role != UserRole.child &&
+            (state.matchedLocation == '/child' ||
+                state.matchedLocation.startsWith('/child/'))) {
+          return '/parent';
+        }
+      }
+
       return null;
     },
     routes: [

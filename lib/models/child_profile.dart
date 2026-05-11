@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum SubjectType { spelling, grammar, maths, geometry }
 
+enum LinkedAccountType { manual, familyLink }
+
 class ChildProfile {
   final String id;
   final String name;
@@ -14,6 +16,9 @@ class ChildProfile {
   final DateTime? screenTimeExpiresAt;
   final bool isActive;
   final DateTime createdAt;
+  final String? googleAccountId;
+  final String? familyLinkId;
+  final LinkedAccountType linkedType;
 
   const ChildProfile({
     required this.id,
@@ -27,6 +32,9 @@ class ChildProfile {
     this.screenTimeExpiresAt,
     this.isActive = true,
     required this.createdAt,
+    this.googleAccountId,
+    this.familyLinkId,
+    this.linkedType = LinkedAccountType.manual,
   });
 
   int get nswYear {
@@ -65,6 +73,9 @@ class ChildProfile {
             : null,
         'isActive': isActive,
         'createdAt': Timestamp.fromDate(createdAt),
+        'googleAccountId': googleAccountId,
+        'familyLinkId': familyLinkId,
+        'linkedType': linkedType.name,
       };
 
   factory ChildProfile.fromFirestore(DocumentSnapshot doc) {
@@ -84,6 +95,11 @@ class ChildProfile {
           (data['screenTimeExpiresAt'] as Timestamp?)?.toDate(),
       isActive: data['isActive'] as bool? ?? true,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      googleAccountId: data['googleAccountId'] as String?,
+      familyLinkId: data['familyLinkId'] as String?,
+      linkedType: data['linkedType'] != null
+          ? LinkedAccountType.values.byName(data['linkedType'] as String)
+          : LinkedAccountType.manual,
     );
   }
 
@@ -96,6 +112,9 @@ class ChildProfile {
     int? currentEarnedMinutes,
     DateTime? screenTimeExpiresAt,
     bool? isActive,
+    String? googleAccountId,
+    String? familyLinkId,
+    LinkedAccountType? linkedType,
     bool clearScreenTime = false,
   }) =>
       ChildProfile(
@@ -113,5 +132,8 @@ class ChildProfile {
             clearScreenTime ? null : (screenTimeExpiresAt ?? this.screenTimeExpiresAt),
         isActive: isActive ?? this.isActive,
         createdAt: createdAt,
+        googleAccountId: googleAccountId ?? this.googleAccountId,
+        familyLinkId: familyLinkId ?? this.familyLinkId,
+        linkedType: linkedType ?? this.linkedType,
       );
 }

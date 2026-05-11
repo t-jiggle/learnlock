@@ -2,14 +2,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Allow parents to read/write only their own child profiles
+    // Allow children to read their own profile
     match /children/{childId} {
-      allow read, write: if request.auth.uid == resource.data.parentUid;
+      allow read: if request.auth.uid == resource.data.parentUid ||
+                     request.auth.uid == resource.data.googleAccountId;
+      allow write: if request.auth.uid == resource.data.parentUid;
       allow create: if request.auth.uid == request.resource.data.parentUid;
     }
 
-    // Allow users to read/write their own progress records
+    // Allow parents to read child progress
+    // Allow children to read/write their own progress
     match /progress/{childId} {
-      allow read, write: if request.auth.uid == get(/databases/(default)/documents/children/$(childId)).data.parentUid;
+      allow read, write: if request.auth.uid == get(/databases/(default)/documents/children/$(childId)).data.parentUid ||
+                            request.auth.uid == get(/databases/(default)/documents/children/$(childId)).data.googleAccountId;
     }
 
     // Deny all other access
@@ -18,3 +23,4 @@ service cloud.firestore {
     }
   }
 }
+
