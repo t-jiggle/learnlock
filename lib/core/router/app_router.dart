@@ -8,6 +8,7 @@ import 'package:learnlock/features/child/screens/learning_session_screen.dart';
 import 'package:learnlock/features/child/screens/reward_screen.dart';
 import 'package:learnlock/features/parent/screens/parent_dashboard_screen.dart';
 import 'package:learnlock/features/parent/screens/child_setup_screen.dart';
+import 'package:learnlock/features/parent/screens/family_link_import_screen.dart';
 import 'package:learnlock/features/parent/screens/settings_screen.dart';
 import 'package:learnlock/features/parent/screens/permissions_screen.dart';
 import 'package:learnlock/models/child_profile.dart';
@@ -63,6 +64,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               final child = state.extra as ChildProfile?;
               return ChildSetupScreen(existing: child);
             },
+          ),
+          GoRoute(
+            path: 'family-link-import',
+            builder: (_, __) => const FamilyLinkImportScreen(),
           ),
           GoRoute(
             path: 'settings',

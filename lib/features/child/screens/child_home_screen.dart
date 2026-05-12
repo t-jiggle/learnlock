@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:learnlock/core/theme/app_theme.dart';
+import 'package:learnlock/features/auth/providers/auth_provider.dart';
 import 'package:learnlock/features/parent/providers/parent_provider.dart';
 import 'package:learnlock/models/child_profile.dart';
 
@@ -38,9 +39,12 @@ class ChildHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activeChild = ref.watch(activeChildProvider);
+    // Use the cross-collection self-profile stream so child users find their
+    // profile without needing their parent's UID.
+    final selfProfile = ref.watch(childSelfProfileStreamProvider);
+    final user = ref.watch(authStateProvider).valueOrNull;
 
-    return activeChild.when(
+    return selfProfile.when(
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
@@ -49,21 +53,86 @@ class ChildHomeScreen extends ConsumerWidget {
       ),
       data: (child) {
         if (child == null) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('😕', style: TextStyle(fontSize: 64)),
-                  const SizedBox(height: 16),
-                  const Text('No child profile active'),
-                ],
-              ),
-            ),
+          return _WaitingForParentScreen(
+            childEmail: user?.email,
+            onRefresh: () => ref.invalidate(childSelfProfileStreamProvider),
           );
         }
         return _ChildHome(child: child);
       },
+    );
+  }
+}
+
+class _WaitingForParentScreen extends StatelessWidget {
+  final String? childEmail;
+  final VoidCallback onRefresh;
+
+  const _WaitingForParentScreen({
+    required this.childEmail,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('⏳', style: TextStyle(fontSize: 72)),
+                const SizedBox(height: 24),
+                Text(
+                  'Waiting for parent setup',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Ask your parent to open LearnLock on their phone and import your profile from Family Link.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                if (childEmail != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      childEmail!,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Your parent needs to import this account',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                ],
+                const SizedBox(height: 36),
+                ElevatedButton.icon(
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Check again'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

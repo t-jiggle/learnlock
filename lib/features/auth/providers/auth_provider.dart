@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:learnlock/services/firebase_service.dart';
+import 'package:learnlock/services/google_sign_in_provider.dart';
 
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
-  return FirebaseService();
+  return FirebaseService(googleSignIn: ref.read(googleSignInProvider));
 });
 
 final authStateProvider = StreamProvider<User?>((ref) {

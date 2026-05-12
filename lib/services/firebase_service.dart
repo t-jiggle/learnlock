@@ -12,10 +12,10 @@ class FirebaseService {
   FirebaseService({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
-    GoogleSignIn? googleSignIn,
+    required GoogleSignIn googleSignIn,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _auth = auth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+        _googleSignIn = googleSignIn;
 
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -87,18 +87,42 @@ class FirebaseService {
     return ChildProfile.fromFirestore(snap.docs.first);
   }
 
+  /// Real-time stream of the child profile matching the given Google account email.
+  /// Used by child users to find their own profile after sign-in.
+  Stream<ChildProfile?> watchChildByGoogleAccountId(String googleAccountId) =>
+      _children
+          .where('googleAccountId', isEqualTo: googleAccountId)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .snapshots()
+          .map((s) =>
+              s.docs.isEmpty ? null : ChildProfile.fromFirestore(s.docs.first));
+
+  /// Creates or updates a child profile linked to a Family Link supervised account.
+  /// Performs an upsert: if a profile with the same googleAccountId already exists
+  /// it updates the Family Link fields, otherwise creates a new profile.
   Future<ChildProfile> linkSupervizedAccount(
     String childGoogleAccountId,
     String childFamilyLinkId,
     String parentUid,
     ChildProfile baseProfile,
   ) async {
+    final existing = await getChildByGoogleAccountId(childGoogleAccountId);
+
+    if (existing != null) {
+      final updated = existing.copyWith(
+        familyLinkId: childFamilyLinkId,
+        linkedType: LinkedAccountType.familyLink,
+      );
+      await updateChild(updated);
+      return updated;
+    }
+
     final profile = baseProfile.copyWith(
       googleAccountId: childGoogleAccountId,
       familyLinkId: childFamilyLinkId,
       linkedType: LinkedAccountType.familyLink,
     );
-
     await _children.add(profile.toFirestore());
     return profile;
   }

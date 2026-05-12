@@ -1,26 +1,29 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow parents to read/write only their own child profiles
-    // Allow children to read their own profile
+
+    // Parents can read/write their own children.
+    // Children can read their own profile (matched by email, which is stored
+    // in googleAccountId, not the Firebase Auth UID).
     match /children/{childId} {
       allow read: if request.auth.uid == resource.data.parentUid ||
-                     request.auth.uid == resource.data.googleAccountId;
+                     request.auth.token.email == resource.data.googleAccountId;
       allow write: if request.auth.uid == resource.data.parentUid;
       allow create: if request.auth.uid == request.resource.data.parentUid;
     }
 
-    // Allow parents to read child progress
-    // Allow children to read/write their own progress
+    // Parents can read/write progress for their children.
+    // Children can read/write their own progress record.
     match /progress/{childId} {
-      allow read, write: if request.auth.uid == get(/databases/(default)/documents/children/$(childId)).data.parentUid ||
-                            request.auth.uid == get(/databases/(default)/documents/children/$(childId)).data.googleAccountId;
+      allow read, write: if request.auth.uid ==
+            get(/databases/(default)/documents/children/$(childId)).data.parentUid ||
+          request.auth.token.email ==
+            get(/databases/(default)/documents/children/$(childId)).data.googleAccountId;
     }
 
-    // Deny all other access
+    // Deny everything else.
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-

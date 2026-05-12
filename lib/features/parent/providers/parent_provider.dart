@@ -169,3 +169,13 @@ final childProfileByGoogleIdProvider =
     FutureProvider.family<ChildProfile?, String>((ref, googleAccountId) async {
   return ref.read(firebaseServiceProvider).getChildByGoogleAccountId(googleAccountId);
 });
+
+/// Real-time stream of the signed-in child's own profile, looked up by their
+/// Google account email. Used on the child home screen so a child user can
+/// find their profile without knowing the parent's UID.
+final childSelfProfileStreamProvider = StreamProvider<ChildProfile?>((ref) {
+  final auth = ref.watch(authStateProvider);
+  final email = auth.valueOrNull?.email;
+  if (email == null) return const Stream.empty();
+  return ref.read(firebaseServiceProvider).watchChildByGoogleAccountId(email);
+});
