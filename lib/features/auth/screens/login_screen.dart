@@ -17,12 +17,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signIn() async {
     setState(() => _loading = true);
     try {
-      await ref.read(firebaseServiceProvider).signInWithGoogle();
+      final result = await ref.read(firebaseServiceProvider).signInWithGoogle();
+      // null means the user dismissed the account picker — not an error.
+      if (result == null && mounted) {
+        setState(() => _loading = false);
+        return;
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sign in failed. Please try again.'),
+            content: Text('Sign in failed: $e'),
             backgroundColor: AppColors.error,
           ),
         );
