@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:learnlock/core/theme/app_theme.dart';
 import 'package:learnlock/features/auth/providers/auth_provider.dart';
-import 'package:learnlock/features/auth/providers/family_link_provider.dart';
 import 'package:learnlock/features/parent/providers/parent_provider.dart';
 import 'package:learnlock/models/child_profile.dart';
 
@@ -19,12 +18,6 @@ class ParentDashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Parent Dashboard'),
         actions: [
-          // Sync from Family Link
-          IconButton(
-            icon: const Icon(Icons.family_restroom_outlined),
-            onPressed: () => context.go('/parent/family-link-import'),
-            tooltip: 'Sync from Family Link',
-          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.go('/parent/settings'),
@@ -71,7 +64,7 @@ class ParentDashboardScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (list) => list.isEmpty
-            ? _SmartEmptyState(onAddManually: () => context.go('/parent/setup'))
+            ? _ManualEmptyState(onAdd: () => context.go('/parent/setup'))
             : _ChildGrid(children: list),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -80,102 +73,6 @@ class ParentDashboardScreen extends ConsumerWidget {
         label: const Text('Add Child'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-      ),
-    );
-  }
-}
-
-/// Shows a Family Link import CTA when supervised accounts are available,
-/// or falls back to a plain "Add manually" empty state.
-class _SmartEmptyState extends ConsumerWidget {
-  final VoidCallback onAddManually;
-  const _SmartEmptyState({required this.onAddManually});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final familyLinkAccounts = ref.watch(familyLinkSupervisedProvider);
-
-    return familyLinkAccounts.when(
-      loading: () => _ManualEmptyState(onAdd: onAddManually),
-      error: (_, __) => _ManualEmptyState(onAdd: onAddManually),
-      data: (accounts) => accounts.isNotEmpty
-          ? _FamilyLinkEmptyState(
-              accountCount: accounts.length,
-              onImport: () => context.go('/parent/family-link-import'),
-              onManual: onAddManually,
-            )
-          : _ManualEmptyState(onAdd: onAddManually),
-    );
-  }
-}
-
-class _FamilyLinkEmptyState extends StatelessWidget {
-  final int accountCount;
-  final VoidCallback onImport;
-  final VoidCallback onManual;
-
-  const _FamilyLinkEmptyState({
-    required this.accountCount,
-    required this.onImport,
-    required this.onManual,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.family_restroom,
-                  size: 64, color: AppColors.primary),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Family Link children found!',
-              style: Theme.of(context).textTheme.headlineMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'We found $accountCount ${accountCount == 1 ? 'child' : 'children'} in your Family Link account. Import them to get started quickly.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: onImport,
-                icon: const Icon(Icons.family_restroom),
-                label: Text(
-                    'Import $accountCount ${accountCount == 1 ? 'child' : 'children'} from Family Link'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: onManual,
-              child: Text(
-                'Add child manually instead',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -256,41 +153,19 @@ class _ChildCard extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Avatar with optional Family Link badge
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        _avatarEmojis[emojiIndex],
-                        style: const TextStyle(fontSize: 36),
-                      ),
-                    ),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    _avatarEmojis[emojiIndex],
+                    style: const TextStyle(fontSize: 36),
                   ),
-                  if (child.linkedType == LinkedAccountType.familyLink)
-                    Positioned(
-                      right: -4,
-                      bottom: -4,
-                      child: Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Icon(Icons.link,
-                            size: 12, color: Colors.white),
-                      ),
-                    ),
-                ],
+                ),
               ),
 
               // Name

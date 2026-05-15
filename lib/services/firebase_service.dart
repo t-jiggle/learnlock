@@ -98,35 +98,6 @@ class FirebaseService {
           .map((s) =>
               s.docs.isEmpty ? null : ChildProfile.fromFirestore(s.docs.first));
 
-  /// Creates or updates a child profile linked to a Family Link supervised account.
-  /// Performs an upsert: if a profile with the same googleAccountId already exists
-  /// it updates the Family Link fields, otherwise creates a new profile.
-  Future<ChildProfile> linkSupervizedAccount(
-    String childGoogleAccountId,
-    String childFamilyLinkId,
-    String parentUid,
-    ChildProfile baseProfile,
-  ) async {
-    final existing = await getChildByGoogleAccountId(childGoogleAccountId);
-
-    if (existing != null) {
-      final updated = existing.copyWith(
-        familyLinkId: childFamilyLinkId,
-        linkedType: LinkedAccountType.familyLink,
-      );
-      await updateChild(updated);
-      return updated;
-    }
-
-    final profile = baseProfile.copyWith(
-      googleAccountId: childGoogleAccountId,
-      familyLinkId: childFamilyLinkId,
-      linkedType: LinkedAccountType.familyLink,
-    );
-    await _children.add(profile.toFirestore());
-    return profile;
-  }
-
   // ---- Progress Records ----
 
   DocumentReference<Map<String, dynamic>> _progressDoc(String childId) =>

@@ -3,9 +3,8 @@ class AppConstants {
 
   // Web OAuth 2.0 client ID from google-services.json (oauth_client with client_type: 3).
   // Required by google_sign_in on Android to request an idToken for Firebase Auth.
-  // TODO: replace with the actual value from your downloaded google-services.json.
   static const googleWebClientId =
-      'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+      '468204062380-0e2ttcp6i807gas56md05pkf1b83b6bo.apps.googleusercontent.com';
   static const defaultLearningMinutes = 5;
   static const defaultEarnedMinutes = 30;
   static const targetAccuracy = 0.75;

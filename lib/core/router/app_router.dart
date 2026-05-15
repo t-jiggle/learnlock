@@ -8,7 +8,6 @@ import 'package:learnlock/features/child/screens/learning_session_screen.dart';
 import 'package:learnlock/features/child/screens/reward_screen.dart';
 import 'package:learnlock/features/parent/screens/parent_dashboard_screen.dart';
 import 'package:learnlock/features/parent/screens/child_setup_screen.dart';
-import 'package:learnlock/features/parent/screens/family_link_import_screen.dart';
 import 'package:learnlock/features/parent/screens/settings_screen.dart';
 import 'package:learnlock/features/parent/screens/permissions_screen.dart';
 import 'package:learnlock/models/child_profile.dart';
@@ -29,14 +28,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (!isLoggedIn && !onLoginPage) return '/login';
       if (isLoggedIn && onLoginPage) {
-        // Route based on user role
         final role = userRole.valueOrNull;
         if (role == UserRole.child) return '/child';
         return '/parent';
       }
 
       if (isLoggedIn && !onLoginPage) {
-        // User already on a page, make sure they're on the right one
         final role = userRole.valueOrNull;
         if (role == UserRole.child && state.matchedLocation.startsWith('/parent')) {
           return '/child';
@@ -64,10 +61,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               final child = state.extra as ChildProfile?;
               return ChildSetupScreen(existing: child);
             },
-          ),
-          GoRoute(
-            path: 'family-link-import',
-            builder: (_, __) => const FamilyLinkImportScreen(),
           ),
           GoRoute(
             path: 'settings',

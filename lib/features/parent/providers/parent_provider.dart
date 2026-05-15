@@ -138,26 +138,6 @@ class ChildProfileNotifier extends StateNotifier<AsyncValue<void>> {
 
   Future<void> addScreenTime(String childId, int minutes) =>
       _firebase.addScreenTime(childId, minutes);
-
-  Future<void> linkFamilyLinkAccount(
-    String childGoogleAccountId,
-    String childFamilyLinkId,
-    String parentUid,
-    ChildProfile baseProfile,
-  ) async {
-    state = const AsyncLoading();
-    try {
-      await _firebase.linkSupervizedAccount(
-        childGoogleAccountId,
-        childFamilyLinkId,
-        parentUid,
-        baseProfile,
-      );
-      state = const AsyncData(null);
-    } catch (e, s) {
-      state = AsyncError(e, s);
-    }
-  }
 }
 
 final childProfileNotifierProvider =
