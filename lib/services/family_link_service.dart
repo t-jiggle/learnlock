@@ -22,10 +22,25 @@ class FamilyLinkService {
   static const _familyApi =
       'https://familysharing.googleapis.com/v1/families/myFamily';
 
-  /// Returns the access token for the current Google account, or null.
+  static const _familySharingScope =
+      'https://www.googleapis.com/auth/familysharing';
+
+  /// Requests the familysharing scope incrementally (does not affect sign-in)
+  /// then returns a valid access token, or null if the scope was denied or the
+  /// user is not signed in.
   Future<String?> _getAccessToken() async {
     final account = _googleSignIn.currentUser;
     if (account == null) return null;
+
+    // Request the scope incrementally; returns false if the user denies it
+    // or if the scope is not configured in the Google Cloud Console.
+    final granted = await _googleSignIn.requestScopes([_familySharingScope]);
+    if (!granted) {
+      debugPrint(
+          'FamilyLinkService: familysharing scope not granted — Family Link features unavailable');
+      return null;
+    }
+
     final auth = await account.authentication;
     return auth.accessToken;
   }
