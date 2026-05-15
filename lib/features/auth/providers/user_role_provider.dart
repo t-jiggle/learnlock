@@ -10,6 +10,6 @@ final userRoleProvider = StreamProvider<UserRole>((ref) {
 
   final firebaseService = ref.read(firebaseServiceProvider);
   return firebaseService
-      .watchChildByGoogleAccountId(user.email ?? user.uid)
+      .watchChildByGoogleAccountId(user.uid)
       .map((child) => child != null ? UserRole.child : UserRole.parent);
 });

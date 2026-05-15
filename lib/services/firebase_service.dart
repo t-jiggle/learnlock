@@ -59,8 +59,18 @@ class FirebaseService {
           .map((s) => s.docs.map(ChildProfile.fromFirestore).toList());
 
   Future<ChildProfile> createChild(ChildProfile profile) async {
-    await _children.add(profile.toFirestore());
-    return profile.copyWith();
+    await _children.doc(profile.id).set(profile.toFirestore());
+    return profile;
+  }
+
+  Future<ChildProfile?> getChildProfileById(String id) async {
+    final doc = await _children.doc(id).get();
+    if (!doc.exists) return null;
+    return ChildProfile.fromFirestore(doc);
+  }
+
+  Future<void> linkChildAccount(String profileId, String uid) async {
+    await _children.doc(profileId).update({'googleAccountId': uid});
   }
 
   Future<void> updateChild(ChildProfile profile) =>

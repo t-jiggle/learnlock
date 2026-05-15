@@ -3,6 +3,9 @@
     <!-- Internet for Firebase, AI APIs -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Camera for QR code scanning -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
     <!-- Usage stats to monitor which app is in foreground -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:learnlock/core/theme/app_theme.dart';
 import 'package:learnlock/features/auth/providers/auth_provider.dart';
 
@@ -107,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 64),
 
-                  // Google Sign-In button
+                  // Parent sign-in button
                   _loading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : _GoogleSignInButton(onTap: _signIn)
@@ -115,16 +116,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           .fadeIn(delay: 600.ms, duration: 500.ms)
                           .slideY(begin: 0.4, end: 0),
 
+                  const SizedBox(height: 16),
+
+                  if (!_loading)
+                    _ChildSetupButton(
+                      onTap: () => context.go('/child-link'),
+                    )
+                        .animate()
+                        .fadeIn(delay: 750.ms, duration: 500.ms)
+                        .slideY(begin: 0.4, end: 0),
+
                   const SizedBox(height: 24),
 
                   Text(
-                    'Parents & Children sign in with their Google account',
+                    'Parents sign in with Google · Children scan the QR code',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.7),
                       fontSize: 14,
                     ),
                     textAlign: TextAlign.center,
-                  ).animate().fadeIn(delay: 800.ms),
+                  ).animate().fadeIn(delay: 900.ms),
                 ],
               ),
             ),
@@ -170,6 +181,39 @@ class _GoogleSignInButton extends StatelessWidget {
               'Continue with Google',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: AppColors.textPrimary,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChildSetupButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ChildSetupButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.qr_code_scanner, color: Colors.white, size: 22),
+            const SizedBox(width: 12),
+            Text(
+              'Set up as child device',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
                   ),
             ),
           ],

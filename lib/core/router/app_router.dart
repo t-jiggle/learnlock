@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:learnlock/features/auth/providers/auth_provider.dart';
 import 'package:learnlock/features/auth/providers/user_role_provider.dart';
 import 'package:learnlock/features/auth/screens/login_screen.dart';
+import 'package:learnlock/features/auth/screens/child_link_screen.dart';
+import 'package:learnlock/features/parent/screens/child_qr_screen.dart';
 import 'package:learnlock/features/child/screens/child_home_screen.dart';
 import 'package:learnlock/features/child/screens/learning_session_screen.dart';
 import 'package:learnlock/features/child/screens/reward_screen.dart';
@@ -26,18 +28,21 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (isLoading) return null;
 
-      if (!isLoggedIn && !onLoginPage) return '/login';
-      if (isLoggedIn && onLoginPage) {
+      final onChildLinkPage = state.matchedLocation == '/child-link';
+
+      if (!isLoggedIn && !onLoginPage && !onChildLinkPage) return '/login';
+      if (isLoggedIn && (onLoginPage || onChildLinkPage)) {
         final role = userRole.valueOrNull;
         if (role == UserRole.child) return '/child';
-        return '/parent';
+        if (role == UserRole.parent && onLoginPage) return '/parent';
+        return null; // still loading or parent finishing child-link flow
       }
 
       if (isLoggedIn && !onLoginPage) {
         final role = userRole.valueOrNull;
         if (role == UserRole.child && state.matchedLocation.startsWith('/parent')) {
           return '/child';
-        } else if (role != UserRole.child &&
+        } else if (role == UserRole.parent &&
             (state.matchedLocation == '/child' ||
                 state.matchedLocation.startsWith('/child/'))) {
           return '/parent';
@@ -52,6 +57,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const LoginScreen(),
       ),
       GoRoute(
+        path: '/child-link',
+        builder: (_, __) => const ChildLinkScreen(),
+      ),
+      GoRoute(
         path: '/parent',
         builder: (_, __) => const ParentDashboardScreen(),
         routes: [
@@ -60,6 +69,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, state) {
               final child = state.extra as ChildProfile?;
               return ChildSetupScreen(existing: child);
+            },
+          ),
+          GoRoute(
+            path: 'child-qr',
+            builder: (_, state) {
+              final profile = state.extra as ChildProfile;
+              return ChildQrScreen(child: profile);
             },
           ),
           GoRoute(

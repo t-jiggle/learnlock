@@ -92,11 +92,11 @@ class _ChildSetupScreenState extends ConsumerState<ChildSetupScreen> {
     final notifier = ref.read(childProfileNotifierProvider.notifier);
     if (_isEditing) {
       await notifier.updateChild(profile);
+      if (mounted) context.go('/parent');
     } else {
       await notifier.createChild(profile);
+      if (mounted) context.go('/parent/child-qr', extra: profile);
     }
-
-    if (mounted) context.go('/parent');
   }
 
   Future<void> _delete() async {
@@ -131,9 +131,14 @@ class _ChildSetupScreenState extends ConsumerState<ChildSetupScreen> {
         actions: _isEditing
             ? [
                 IconButton(
+                  icon: const Icon(Icons.qr_code_outlined),
+                  tooltip: 'Show QR Code',
+                  onPressed: () => context.go('/parent/child-qr', extra: widget.existing),
+                ),
+                IconButton(
                   icon: const Icon(Icons.delete_outline, color: AppColors.error),
                   onPressed: _delete,
-                )
+                ),
               ]
             : null,
       ),
