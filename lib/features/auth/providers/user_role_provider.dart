@@ -8,8 +8,11 @@ final userRoleProvider = StreamProvider<UserRole>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (user == null) return Stream.value(UserRole.independent);
 
+  final email = user.email;
+  if (email == null) return Stream.value(UserRole.parent);
+
   final firebaseService = ref.read(firebaseServiceProvider);
   return firebaseService
-      .watchChildByGoogleAccountId(user.uid)
+      .watchChildByGoogleAccountId(email)
       .map((child) => child != null ? UserRole.child : UserRole.parent);
 });

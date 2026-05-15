@@ -81,8 +81,8 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
         return;
       }
 
-      final uid = result.user?.uid;
-      if (uid == null) {
+      final email = result.user?.email;
+      if (email == null) {
         setState(() {
           _step = _Step.confirming;
           _error = 'Could not read account details. Please try again.';
@@ -90,7 +90,7 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
         return;
       }
 
-      await firebase.linkChildAccount(_profile!.id, uid);
+      await firebase.linkChildAccount(_profile!.id, email);
       // Router redirect handles navigation once userRoleProvider resolves to child.
     } catch (e) {
       if (mounted) {
