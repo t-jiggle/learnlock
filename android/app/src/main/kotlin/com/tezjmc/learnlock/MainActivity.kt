@@ -52,12 +52,13 @@ class MainActivity : FlutterActivity() {
                 "startMonitor" -> {
                     val childId = call.argument<String>("childId") ?: ""
                     val hasScreenTime = call.argument<Boolean>("hasScreenTime") ?: false
-                    val expiresAt = call.argument<Long>("expiresAt")
+                    val expiresAt = call.argument<Long>("expiresAt") ?: 0L
+                    ScreenTimeState.update(hasScreenTime, expiresAt)
 
                     val intent = Intent(this, AppMonitorService::class.java).apply {
                         putExtra("childId", childId)
                         putExtra("hasScreenTime", hasScreenTime)
-                        putExtra("expiresAt", expiresAt ?: 0L)
+                        putExtra("expiresAt", expiresAt)
                         action = AppMonitorService.ACTION_START
                     }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -75,12 +76,26 @@ class MainActivity : FlutterActivity() {
 
                 "updateScreenTime" -> {
                     val hasScreenTime = call.argument<Boolean>("hasScreenTime") ?: false
-                    val expiresAt = call.argument<Long>("expiresAt")
+                    val expiresAt = call.argument<Long>("expiresAt") ?: 0L
+                    ScreenTimeState.update(hasScreenTime, expiresAt)
                     val intent = Intent(AppMonitorService.ACTION_UPDATE_SCREEN_TIME).apply {
                         putExtra("hasScreenTime", hasScreenTime)
-                        putExtra("expiresAt", expiresAt ?: 0L)
+                        putExtra("expiresAt", expiresAt)
                     }
                     sendBroadcast(intent)
+                    result.success(null)
+                }
+
+                "hasAccessibilityPermission" -> {
+                    val enabled = android.provider.Settings.Secure.getString(
+                        contentResolver,
+                        android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                    ) ?: ""
+                    result.success(enabled.contains(packageName))
+                }
+
+                "requestAccessibilityPermission" -> {
+                    startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     result.success(null)
                 }
 

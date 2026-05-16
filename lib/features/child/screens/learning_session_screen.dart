@@ -46,12 +46,17 @@ class LearningSessionScreen extends ConsumerWidget {
   }
 }
 
-class _Session extends ConsumerWidget {
+class _Session extends ConsumerStatefulWidget {
   final ChildProfile child;
   final SubjectType subject;
 
   const _Session({required this.child, required this.subject});
 
+  @override
+  ConsumerState<_Session> createState() => _SessionState();
+}
+
+class _SessionState extends ConsumerState<_Session> {
   static const _subjectColors = {
     SubjectType.spelling: AppColors.spellingColor,
     SubjectType.grammar: AppColors.grammarColor,
@@ -67,16 +72,20 @@ class _Session extends ConsumerWidget {
   };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final child = widget.child;
+    final subject = widget.subject;
+
+    // Listen fires once per state transition, not on every rebuild.
+    ref.listen(sessionEngineProvider((child, subject)), (_, next) {
+      if (next.phase == SessionPhase.complete && mounted) {
+        context.go('/child/reward');
+      }
+    });
+
     final session = ref.watch(sessionEngineProvider((child, subject)));
     final color = _subjectColors[subject]!;
     final emoji = _subjectEmoji[subject]!;
-
-    if (session.phase == SessionPhase.complete) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/child/reward');
-      });
-    }
 
     return Scaffold(
       body: Container(
@@ -329,11 +338,7 @@ class _QuestionView extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    question.prompt,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
+                  _QuestionPrompt(prompt: question.prompt),
                 ],
               ),
             ),
@@ -360,6 +365,39 @@ class _QuestionView extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Renders a question prompt. If the prompt's first line is a short emoji
+// (picture questions), it displays that line at 80sp and the rest at normal size.
+class _QuestionPrompt extends StatelessWidget {
+  final String prompt;
+  const _QuestionPrompt({required this.prompt});
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = prompt.split('\n');
+    final firstLine = lines.first;
+    final isPicture = firstLine.length <= 8 && lines.length > 1;
+
+    if (isPicture) {
+      return Column(
+        children: [
+          Text(firstLine, style: const TextStyle(fontSize: 80)),
+          const SizedBox(height: 12),
+          Text(
+            lines.skip(1).join('\n'),
+            style: Theme.of(context).textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
+    return Text(
+      prompt,
+      style: Theme.of(context).textTheme.headlineSmall,
+      textAlign: TextAlign.center,
     );
   }
 }

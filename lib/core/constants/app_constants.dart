@@ -5,7 +5,7 @@ class AppConstants {
   // Required by google_sign_in on Android to request an idToken for Firebase Auth.
   static const googleWebClientId =
       '468204062380-0e2ttcp6i807gas56md05pkf1b83b6bo.apps.googleusercontent.com';
-  static const defaultLearningMinutes = 5;
+  static const defaultLearningMinutes = 2;
   static const defaultEarnedMinutes = 30;
   static const targetAccuracy = 0.75;
 

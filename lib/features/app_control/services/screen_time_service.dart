@@ -54,11 +54,21 @@ class ScreenTimeService {
     return secs ?? 0;
   }
 
+  /// Check whether the LearnLock accessibility service is enabled
+  static Future<bool> hasAccessibilityPermission() async {
+    final granted = await _channel.invokeMethod<bool>('hasAccessibilityPermission');
+    return granted ?? false;
+  }
+
+  static Future<void> requestAccessibilityPermission() =>
+      _channel.invokeMethod('requestAccessibilityPermission');
+
   /// Check whether all required permissions are granted
   static Future<Map<String, bool>> checkAllPermissions() async {
     return {
       'usageStats': await hasUsageStatsPermission(),
       'overlay': await hasOverlayPermission(),
+      'accessibility': await hasAccessibilityPermission(),
     };
   }
 }

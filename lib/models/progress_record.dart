@@ -142,12 +142,18 @@ class ProgressRecord {
     final lastDate = lastSessionDate;
     int newStreak = currentStreak;
     if (lastDate != null) {
-      final daysDiff = today.difference(lastDate).inDays;
+      // Compare calendar dates (year/month/day), not raw 24-hour duration.
+      // Using inDays on a Duration would report 0 for e.g. 11 PM → midnight,
+      // failing to increment the streak on back-to-back calendar days.
+      final todayDate = DateTime(today.year, today.month, today.day);
+      final lastDateOnly = DateTime(lastDate.year, lastDate.month, lastDate.day);
+      final daysDiff = todayDate.difference(lastDateOnly).inDays;
       if (daysDiff == 1) {
         newStreak++;
       } else if (daysDiff > 1) {
         newStreak = 1;
       }
+      // daysDiff == 0 means same calendar day — keep streak unchanged.
     } else {
       newStreak = 1;
     }

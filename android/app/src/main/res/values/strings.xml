@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">LearnLock uses accessibility to instantly detect when another app is opened, so it can show the learning screen before your child can use it. No content from other apps is ever read.</string>
+</resources>

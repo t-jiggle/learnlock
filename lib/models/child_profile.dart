@@ -28,7 +28,7 @@ class ChildProfile {
     required this.ageYears,
     required this.parentUid,
     required this.enabledSubjects,
-    this.learningMinutesRequired = 5,
+    this.learningMinutesRequired = 2,
     this.earnedScreenMinutes = 30,
     this.currentEarnedMinutes = 0,
     this.screenTimeExpiresAt,
@@ -94,7 +94,7 @@ class ChildProfile {
       enabledSubjects: (data['enabledSubjects'] as List<dynamic>)
           .map((s) => SubjectType.values.byName(s as String))
           .toList(),
-      learningMinutesRequired: data['learningMinutesRequired'] as int? ?? 5,
+      learningMinutesRequired: data['learningMinutesRequired'] as int? ?? 2,
       earnedScreenMinutes: data['earnedScreenMinutes'] as int? ?? 30,
       currentEarnedMinutes: data['currentEarnedMinutes'] as int? ?? 0,
       screenTimeExpiresAt:

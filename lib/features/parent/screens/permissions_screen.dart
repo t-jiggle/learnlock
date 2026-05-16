@@ -14,6 +14,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
     with WidgetsBindingObserver {
   bool _usageStatsGranted = false;
   bool _overlayGranted = false;
+  bool _accessibilityGranted = false;
   bool _checking = true;
 
   @override
@@ -40,13 +41,14 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
     setState(() {
       _usageStatsGranted = perms['usageStats'] ?? false;
       _overlayGranted = perms['overlay'] ?? false;
+      _accessibilityGranted = perms['accessibility'] ?? false;
       _checking = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final allGranted = _usageStatsGranted && _overlayGranted;
+    final allGranted = _usageStatsGranted && _overlayGranted && _accessibilityGranted;
 
     return Scaffold(
       appBar: AppBar(title: const Text('App Permissions')),
@@ -112,6 +114,21 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                   granted: _overlayGranted,
                   onRequest: () async {
                     await ScreenTimeService.requestOverlayPermission();
+                    await _checkPermissions();
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                _PermissionCard(
+                  icon: Icons.accessibility_new,
+                  color: AppColors.accent,
+                  title: 'Accessibility Service',
+                  description:
+                      'Enables instant app detection — the moment your child opens another app, the learning screen appears with no delay. Tap Grant, find "LearnLock Monitor" in the list, and turn it on.',
+                  granted: _accessibilityGranted,
+                  onRequest: () async {
+                    await ScreenTimeService.requestAccessibilityPermission();
                     await _checkPermissions();
                   },
                 ),

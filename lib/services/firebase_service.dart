@@ -69,8 +69,8 @@ class FirebaseService {
     return ChildProfile.fromFirestore(doc);
   }
 
-  Future<void> linkChildAccount(String profileId, String uid) async {
-    await _children.doc(profileId).update({'googleAccountId': uid});
+  Future<void> linkChildAccount(String profileId, String email) async {
+    await _children.doc(profileId).update({'googleAccountId': email});
   }
 
   Future<void> updateChild(ChildProfile profile) =>

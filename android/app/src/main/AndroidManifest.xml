@@ -56,6 +56,12 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Also act as a home/launcher so pressing Home returns to LearnLock -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
         </activity>
 
         <!-- App Monitor Foreground Service -->
@@ -87,6 +93,20 @@
             android:excludeFromRecents="true"
             android:showOnLockScreen="true"
             android:turnScreenOn="true"/>
+
+        <!-- Accessibility service for instant (zero-delay) app interception -->
+        <service
+            android:name=".LearnLockAccessibilityService"
+            android:exported="true"
+            android:label="LearnLock Monitor"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config"/>
+        </service>
 
         <meta-data
             android:name="flutterEmbedding"

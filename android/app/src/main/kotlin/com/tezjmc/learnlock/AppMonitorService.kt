@@ -66,6 +66,10 @@ class AppMonitorService : Service() {
         childId = intent?.getStringExtra("childId") ?: ""
         hasScreenTime = intent?.getBooleanExtra("hasScreenTime", false) ?: false
         screenTimeExpiresAt = intent?.getLongExtra("expiresAt", 0L) ?: 0L
+        // Remove any existing runnable before posting a new one so a second
+        // onStartCommand call (START_STICKY restart or duplicate startMonitor)
+        // doesn't spawn two concurrent poll loops.
+        handler.removeCallbacks(pollRunnable)
         handler.post(pollRunnable)
         return START_STICKY
     }

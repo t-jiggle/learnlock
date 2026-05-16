@@ -2,22 +2,57 @@ import 'package:learnlock/models/question.dart';
 import 'package:learnlock/models/child_profile.dart';
 import 'dart:math';
 
-// NSW K-6 sight words and age-appropriate spelling lists
-// Based on NSW Foundation Sight Words and NESA English K-6 Syllabus
+// NSW K-6 spelling and sight-word content.
+// Picture words (those with emoji) show the emoji prominently and ask the child
+// to choose the correct spelling — they never see the word written out.
+// Words without emoji use a scrambled-letters fallback.
 class SpellingContent {
   static final _random = Random();
 
-  // Dolch/NSW sight word lists by year
+  // Words that have a clear, unambiguous emoji representation.
+  static const _emojiWords = {
+    // Animals
+    'cat': '🐱', 'dog': '🐶', 'bird': '🐦', 'fish': '🐟', 'cow': '🐄',
+    'pig': '🐷', 'hen': '🐔', 'frog': '🐸', 'duck': '🦆', 'bee': '🐝',
+    'ant': '🐜', 'bear': '🐻', 'lion': '🦁', 'horse': '🐴', 'sheep': '🐑',
+    'snake': '🐍', 'whale': '🐋', 'crab': '🦀', 'owl': '🦉', 'fox': '🦊',
+    'wolf': '🐺', 'deer': '🦌', 'goat': '🐐', 'rabbit': '🐇', 'turtle': '🐢',
+    'penguin': '🐧', 'elephant': '🐘', 'giraffe': '🦒', 'monkey': '🐒',
+    'tiger': '🐯', 'zebra': '🦓', 'panda': '🐼', 'crocodile': '🐊',
+    // Food & drink
+    'apple': '🍎', 'cake': '🎂', 'egg': '🥚', 'bread': '🍞', 'milk': '🥛',
+    'pizza': '🍕', 'rice': '🍚', 'grape': '🍇', 'lemon': '🍋',
+    'peach': '🍑', 'pear': '🍐', 'corn': '🌽', 'carrot': '🥕',
+    'strawberry': '🍓', 'banana': '🍌', 'cherry': '🍒',
+    'mushroom': '🍄', 'cookie': '🍪', 'donut': '🍩',
+    // Objects
+    'ball': '⚽', 'book': '📚', 'boat': '⛵', 'car': '🚗', 'bus': '🚌',
+    'star': '⭐', 'moon': '🌙', 'sun': '☀️', 'tree': '🌳', 'door': '🚪',
+    'key': '🔑', 'hat': '🎩', 'cup': '☕', 'bell': '🔔',
+    'drum': '🥁', 'clock': '🕐', 'phone': '📱', 'lamp': '💡',
+    'pen': '🖊️', 'rocket': '🚀',
+    'train': '🚂', 'plane': '✈️', 'ship': '🚢', 'truck': '🚛', 'bike': '🚲',
+    // Nature
+    'rain': '🌧️', 'snow': '❄️', 'flower': '🌸', 'leaf': '🍂', 'fire': '🔥',
+    'cloud': '☁️', 'rainbow': '🌈', 'wave': '🌊',
+    // Places
+    'house': '🏠', 'school': '🏫', 'hospital': '🏥', 'castle': '🏰',
+    // Sports & play
+    'football': '🏈', 'basketball': '🏀', 'kite': '🪁',
+    'robot': '🤖', 'crown': '👑', 'heart': '❤️',
+  };
+
+  // NSW K-6 sight word lists (non-picture words)
   static const _wordsByYear = {
     0: [ // Kindergarten
-      'a', 'and', 'at', 'big', 'can', 'cat', 'dad', 'dog', 'for', 'go',
-      'had', 'has', 'he', 'her', 'him', 'his', 'I', 'in', 'is', 'it',
-      'like', 'look', 'me', 'mum', 'my', 'no', 'not', 'of', 'on', 'play',
-      'ran', 'run', 'said', 'sat', 'see', 'she', 'so', 'the', 'this', 'to',
-      'up', 'was', 'we', 'went', 'will', 'with', 'yes', 'you', 'am', 'be',
+      'a', 'and', 'at', 'big', 'can', 'for', 'go', 'had', 'has', 'he',
+      'her', 'him', 'his', 'I', 'in', 'is', 'it', 'like', 'look', 'me',
+      'mum', 'my', 'no', 'not', 'of', 'on', 'play', 'ran', 'run', 'said',
+      'sat', 'see', 'she', 'so', 'the', 'this', 'to', 'up', 'was', 'we',
+      'went', 'will', 'with', 'yes', 'you', 'am', 'be',
     ],
     1: [ // Year 1
-      'about', 'after', 'again', 'all', 'also', 'any', 'are', 'back', 'ball',
+      'about', 'after', 'again', 'all', 'also', 'any', 'are', 'back',
       'been', 'before', 'bring', 'came', 'come', 'day', 'did', 'down', 'eat',
       'find', 'first', 'fly', 'from', 'fun', 'gave', 'get', 'give', 'good',
       'got', 'have', 'help', 'here', 'home', 'how', 'into', 'just', 'keep',
@@ -29,19 +64,19 @@ class SpellingContent {
     2: [ // Year 2
       'always', 'answer', 'around', 'ask', 'away', 'behind', 'below', 'best',
       'both', 'buy', 'carry', 'change', 'clean', 'close', 'cold', 'colour',
-      'done', 'door', 'draw', 'drink', 'drop', 'dry', 'during', 'each',
-      'early', 'enough', 'even', 'every', 'face', 'fall', 'far', 'fast',
-      'feel', 'few', 'follow', 'food', 'four', 'front', 'full', 'garden',
-      'girl', 'green', 'ground', 'grow', 'guess', 'happy', 'hard', 'head',
-      'heat', 'high', 'hold', 'house', 'hurry', 'important', 'jump', 'kind',
-      'large', 'last', 'laugh', 'learn', 'leave', 'left', 'light', 'list',
+      'done', 'draw', 'drink', 'drop', 'dry', 'during', 'each', 'early',
+      'enough', 'even', 'every', 'face', 'fall', 'far', 'fast', 'feel', 'few',
+      'follow', 'food', 'four', 'front', 'full', 'garden', 'girl', 'green',
+      'ground', 'grow', 'guess', 'happy', 'hard', 'head', 'heat', 'high',
+      'hold', 'hurry', 'important', 'jump', 'kind', 'large', 'last', 'laugh',
+      'learn', 'leave', 'left', 'light', 'list',
     ],
     3: [ // Year 3
       'afraid', 'agree', 'almost', 'along', 'already', 'although', 'another',
       'anything', 'apart', 'appear', 'arrived', 'attention', 'beautiful',
       'because', 'begin', 'between', 'body', 'break', 'build', 'busy',
       'careful', 'catch', 'caught', 'centre', 'certain', 'children',
-      'choose', 'church', 'clear', 'climb', 'clothes', 'complete', 'consider',
+      'choose', 'clear', 'climb', 'clothes', 'complete', 'consider',
       'contain', 'control', 'copy', 'corner', 'country', 'course', 'cover',
       'create', 'cross', 'decide', 'describe', 'desert', 'different',
       'difficult', 'direction', 'discover', 'distance', 'divide', 'double',
@@ -57,7 +92,7 @@ class SpellingContent {
       'celebration', 'challenge', 'character', 'comfortable', 'communicate',
     ],
     5: [ // Year 5
-      'abundance', 'accommodation', 'accomplishment', 'accurate', 'acknowledge',
+      'abundance', 'accommodation', 'accomplishment', 'accurate',
       'adequate', 'adjacent', 'administration', 'admirable', 'adolescent',
       'aftermath', 'aggressive', 'allegiance', 'alliance', 'ambassador',
       'ambiguous', 'ambitious', 'amendment', 'analytical', 'anniversary',
@@ -69,8 +104,8 @@ class SpellingContent {
     ],
     6: [ // Year 6
       'abbreviation', 'abolish', 'absolutely', 'abstain', 'acceleration',
-      'accessible', 'accountability', 'acknowledge', 'acquisition', 'adaptation',
-      'adequately', 'administration', 'advancement', 'aggression', 'allegiance',
+      'accessible', 'accountability', 'acquisition', 'adaptation',
+      'adequately', 'advancement', 'aggression', 'allegiance',
       'alternative', 'ambivalent', 'amendment', 'analytical', 'appropriate',
       'approximately', 'architecture', 'arthritis', 'assimilation', 'association',
       'atmosphere', 'authoritative', 'beneficial', 'biographical', 'catastrophe',
@@ -84,38 +119,60 @@ class SpellingContent {
     required DifficultyLevel difficulty,
     int count = 5,
   }) {
-    final wordList = _getWordList(nswYear, difficulty);
-    wordList.shuffle(_random);
-    final words = wordList.take(count).toList();
+    final picturePool = _pictureWordsForYear(nswYear, difficulty)..shuffle(_random);
+    final sightPool = _sightWordsForYear(nswYear, difficulty)..shuffle(_random);
 
-    return words.map((word) => _buildQuestion(word, nswYear, difficulty)).toList();
-  }
+    final questions = <Question>[];
+    int pictureIdx = 0;
+    int sightIdx = 0;
+    // Aim for roughly half picture, half sight-word
+    final pictureTarget = (count / 2).ceil();
 
-  static List<String> _getWordList(int year, DifficultyLevel difficulty) {
-    final targetYear = _adjustedYear(year, difficulty);
-    final List<String> words = [];
-    for (int y = 0; y <= targetYear.clamp(0, 6); y++) {
-      words.addAll(_wordsByYear[y] ?? []);
+    while (questions.length < count) {
+      final wantPicture =
+          questions.length < pictureTarget && pictureIdx < picturePool.length;
+      if (wantPicture) {
+        questions.add(
+            _buildPictureQuestion(picturePool[pictureIdx++], nswYear, difficulty));
+      } else if (sightIdx < sightPool.length) {
+        questions.add(
+            _buildScrambleQuestion(sightPool[sightIdx++], nswYear, difficulty));
+      } else if (pictureIdx < picturePool.length) {
+        questions.add(
+            _buildPictureQuestion(picturePool[pictureIdx++], nswYear, difficulty));
+      } else {
+        break;
+      }
     }
-    return words;
+    return questions;
   }
 
-  static int _adjustedYear(int year, DifficultyLevel difficulty) {
-    switch (difficulty) {
-      case DifficultyLevel.veryEasy:
-        return (year - 1).clamp(0, 6);
-      case DifficultyLevel.easy:
-        return year.clamp(0, 6);
-      case DifficultyLevel.medium:
-        return year.clamp(0, 6);
-      case DifficultyLevel.hard:
-        return (year + 1).clamp(0, 6);
-      case DifficultyLevel.veryHard:
-        return (year + 2).clamp(0, 6);
-    }
+  // ── Picture (emoji) question ──────────────────────────────────────────────
+
+  static Question _buildPictureQuestion(
+      String word, int year, DifficultyLevel difficulty) {
+    final emoji = _emojiWords[word]!;
+    final distractors = _generateDistractors(word, 3);
+    final allChoices = [...distractors, word]..shuffle(_random);
+
+    return Question(
+      id: 'spell_pic_${word}_${_random.nextInt(9999)}',
+      subject: SubjectType.spelling,
+      type: QuestionType.multipleChoice,
+      difficulty: difficulty,
+      prompt: '$emoji\nWhat is this? Choose the correct spelling:',
+      choices: allChoices,
+      correctAnswer: word,
+      explanation: 'The correct spelling is "$word".',
+      encouragement: _encouragement(),
+      nswYear: year,
+    );
   }
 
-  static Question _buildQuestion(String word, int year, DifficultyLevel difficulty) {
+  // ── Scramble (non-picture) question ──────────────────────────────────────
+
+  static Question _buildScrambleQuestion(
+      String word, int year, DifficultyLevel difficulty) {
     final scrambled = _scramble(word);
     final distractors = _generateDistractors(word, 3);
     final allChoices = [...distractors, word]..shuffle(_random);
@@ -125,14 +182,44 @@ class SpellingContent {
       subject: SubjectType.spelling,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
-      prompt: 'Which is the correct spelling?\n"$scrambled"',
+      prompt: 'Unscramble the letters and choose the correct spelling:\n"$scrambled"',
       choices: allChoices,
       correctAnswer: word,
       explanation: 'The correct spelling is "$word".',
-      encouragement: _encouragement(word),
+      encouragement: _encouragement(),
       nswYear: year,
     );
   }
+
+  // ── Word pool helpers ─────────────────────────────────────────────────────
+
+  static List<String> _pictureWordsForYear(int year, DifficultyLevel difficulty) {
+    final adjustedYear = _adjustedYear(year, difficulty);
+    // Younger years: only short words; older years allow longer picture words
+    final maxLen = adjustedYear <= 1 ? 5 : adjustedYear <= 3 ? 8 : 12;
+    return _emojiWords.keys.where((w) => w.length <= maxLen).toList();
+  }
+
+  static List<String> _sightWordsForYear(int year, DifficultyLevel difficulty) {
+    final targetYear = _adjustedYear(year, difficulty);
+    final words = <String>[];
+    for (int y = 0; y <= targetYear.clamp(0, 6); y++) {
+      words.addAll(_wordsByYear[y] ?? []);
+    }
+    return words;
+  }
+
+  static int _adjustedYear(int year, DifficultyLevel difficulty) {
+    return switch (difficulty) {
+      DifficultyLevel.veryEasy => (year - 1).clamp(0, 6),
+      DifficultyLevel.easy => year.clamp(0, 6),
+      DifficultyLevel.medium => year.clamp(0, 6),
+      DifficultyLevel.hard => (year + 1).clamp(0, 6),
+      DifficultyLevel.veryHard => (year + 2).clamp(0, 6),
+    };
+  }
+
+  // ── Distractor generation ─────────────────────────────────────────────────
 
   static String _scramble(String word) {
     if (word.length <= 2) return word;
@@ -145,14 +232,10 @@ class SpellingContent {
 
   static List<String> _generateDistractors(String word, int count) {
     final distortions = <String>[];
-    final mutations = [
-      _doubleRandom,
-      _swapTwo,
-      _addSilentE,
-      _changeSuffix,
-    ];
-
-    while (distortions.length < count) {
+    final mutations = [_doubleRandom, _swapTwo, _addSilentE, _changeSuffix];
+    int attempts = 0;
+    while (distortions.length < count && attempts < 40) {
+      attempts++;
       final mutation = mutations[_random.nextInt(mutations.length)];
       final distorted = mutation(word);
       if (distorted != word && !distortions.contains(distorted)) {
@@ -187,9 +270,9 @@ class SpellingContent {
     return '${w}ly';
   }
 
-  static String _encouragement(String word) {
-    final hints = [
-      'Remember to sound it out letter by letter!',
+  static String _encouragement() {
+    const hints = [
+      'Sound it out letter by letter!',
       'Try breaking it into smaller parts!',
       'Think about the sounds you hear!',
       'Look for word families you know!',

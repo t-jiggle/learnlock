@@ -31,7 +31,7 @@ class _ChildSetupScreenState extends ConsumerState<ChildSetupScreen> {
     final e = widget.existing;
     _nameCtrl = TextEditingController(text: e?.name ?? '');
     _age = e?.ageYears ?? 7;
-    _learningMinutes = e?.learningMinutesRequired ?? 5;
+    _learningMinutes = e?.learningMinutesRequired ?? 2;
     _earnedMinutes = e?.earnedScreenMinutes ?? 30;
     _enabledSubjects = e != null
         ? Set<SubjectType>.from(e.enabledSubjects)
@@ -203,9 +203,9 @@ class _ChildSetupScreenState extends ConsumerState<ChildSetupScreen> {
             title: 'Learning time required: $_learningMinutes minutes',
             child: Slider(
               value: _learningMinutes.toDouble(),
-              min: 3,
+              min: 2,
               max: 20,
-              divisions: 17,
+              divisions: 18,
               label: '$_learningMinutes min',
               activeColor: AppColors.secondary,
               onChanged: (v) => setState(() => _learningMinutes = v.round()),
