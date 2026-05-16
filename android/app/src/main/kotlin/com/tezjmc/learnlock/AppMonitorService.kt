@@ -54,7 +54,12 @@ class AppMonitorService : Service() {
         super.onCreate()
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, buildNotification())
-        registerReceiver(updateReceiver, IntentFilter(ACTION_UPDATE_SCREEN_TIME))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(updateReceiver, IntentFilter(ACTION_UPDATE_SCREEN_TIME), RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(updateReceiver, IntentFilter(ACTION_UPDATE_SCREEN_TIME))
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

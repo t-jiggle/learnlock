@@ -5,6 +5,7 @@ import 'package:learnlock/core/theme/app_theme.dart';
 import 'package:learnlock/features/auth/providers/auth_provider.dart';
 import 'package:learnlock/features/parent/providers/parent_provider.dart';
 import 'package:learnlock/models/child_profile.dart';
+import 'package:intl/intl.dart';
 
 class ParentDashboardScreen extends ConsumerWidget {
   const ParentDashboardScreen({super.key});
@@ -185,7 +186,10 @@ class _ChildCard extends ConsumerWidget {
                     ),
               ),
 
-              // Screen time badge
+              // Device info
+              _DeviceInfoRow(child: child),
+
+              // Screen time badge + unlock button
               _ScreenTimeBadge(child: child),
 
               // Progress streak
@@ -216,17 +220,45 @@ class _ChildCard extends ConsumerWidget {
   }
 }
 
-class _ScreenTimeBadge extends StatelessWidget {
+class _ScreenTimeBadge extends ConsumerWidget {
   final ChildProfile child;
   const _ScreenTimeBadge({required this.child});
 
+  Future<void> _unlock(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Unlock screen time?'),
+        content: Text(
+          'This will grant ${child.name} ${child.earnedScreenMinutes} minutes '
+          'of screen time now, without completing learning.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Unlock'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await ref
+          .read(firebaseServiceProvider)
+          .addScreenTime(child.id, child.earnedScreenMinutes);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (child.hasScreenTimeAvailable) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.15),
+          color: AppColors.success.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -245,26 +277,113 @@ class _ScreenTimeBadge extends StatelessWidget {
         ),
       );
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.lock_outline, size: 14, color: AppColors.error),
-          SizedBox(width: 4),
-          Text(
-            'Locked',
-            style: TextStyle(
-                color: AppColors.error,
-                fontWeight: FontWeight.w700,
-                fontSize: 13),
+    // Use Wrap so the two pills stack vertically on narrow grid cards instead
+    // of overflowing horizontally.
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      alignment: WrapAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.error.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
-      ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.lock_outline, size: 14, color: AppColors.error),
+              SizedBox(width: 4),
+              Text(
+                'Locked',
+                style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        GestureDetector(
+          onTap: () => _unlock(context, ref),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_open, size: 14, color: AppColors.primary),
+                SizedBox(width: 4),
+                Text(
+                  'Unlock',
+                  style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DeviceInfoRow extends StatelessWidget {
+  final ChildProfile child;
+  const _DeviceInfoRow({required this.child});
+
+  String _lastSeenText(DateTime? lastSeen) {
+    if (lastSeen == null) return 'Never connected';
+    final diff = DateTime.now().difference(lastSeen);
+    if (diff.inMinutes < 2) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return DateFormat('d MMM').format(lastSeen);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLinked = child.googleAccountId != null &&
+        child.googleAccountId!.isNotEmpty;
+    final platform = child.devicePlatform;
+    final platformLabel = platform == 'android'
+        ? 'Android'
+        : platform == 'ios'
+            ? 'iOS'
+            : null;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          isLinked ? Icons.smartphone : Icons.phone_android_outlined,
+          size: 13,
+          color: isLinked
+              ? AppColors.textSecondary
+              : AppColors.error.withValues(alpha: 0.6),
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            isLinked
+                ? '${platformLabel != null ? '$platformLabel · ' : ''}${_lastSeenText(child.lastSeenAt)}'
+                : 'Not linked',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: isLinked
+                      ? AppColors.textSecondary
+                      : AppColors.error.withValues(alpha: 0.7),
+                  fontSize: 11,
+                ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

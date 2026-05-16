@@ -69,7 +69,10 @@ class _ChildSetupScreenState extends ConsumerState<ChildSetupScreen> {
 
     setState(() => _saving = true);
     final user = ref.read(authStateProvider).valueOrNull;
-    if (user == null) return;
+    if (user == null) {
+      setState(() => _saving = false);
+      return;
+    }
 
     final profile = widget.existing?.copyWith(
           name: _nameCtrl.text.trim(),

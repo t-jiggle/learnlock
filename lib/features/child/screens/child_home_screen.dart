@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:learnlock/core/theme/app_theme.dart';
+import 'package:learnlock/features/app_control/services/screen_time_service.dart';
 import 'package:learnlock/features/auth/providers/auth_provider.dart';
 import 'package:learnlock/features/parent/providers/parent_provider.dart';
 import 'package:learnlock/models/child_profile.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
 
 class ChildHomeScreen extends ConsumerWidget {
   const ChildHomeScreen({super.key});
@@ -39,8 +43,6 @@ class ChildHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Use the cross-collection self-profile stream so child users find their
-    // profile without needing their parent's UID.
     final selfProfile = ref.watch(childSelfProfileStreamProvider);
     final user = ref.watch(authStateProvider).valueOrNull;
 
@@ -92,7 +94,7 @@ class _WaitingForParentScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Ask your parent to open LearnLock on their phone and import your profile from Family Link.',
+                  'Ask your parent to open LearnLock on their phone and link your profile.',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -116,7 +118,7 @@ class _WaitingForParentScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Your parent needs to import this account',
+                    'Your parent needs to link this account',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -137,9 +139,241 @@ class _WaitingForParentScreen extends StatelessWidget {
   }
 }
 
-class _ChildHome extends ConsumerWidget {
+// ---------------------------------------------------------------------------
+// Main child home — handles both locked and unlocked states
+// ---------------------------------------------------------------------------
+
+class _ChildHome extends ConsumerStatefulWidget {
   final ChildProfile child;
   const _ChildHome({required this.child});
+
+  @override
+  ConsumerState<_ChildHome> createState() => _ChildHomeState();
+}
+
+class _ChildHomeState extends ConsumerState<_ChildHome> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startNativeMonitor(widget.child);
+      _reportDeviceInfo(widget.child.id);
+    });
+  }
+
+  @override
+  void didUpdateWidget(_ChildHome old) {
+    super.didUpdateWidget(old);
+    // Profile stream emitted a new value — keep native monitor in sync.
+    final prev = old.child;
+    final next = widget.child;
+    if (prev.hasScreenTimeAvailable != next.hasScreenTimeAvailable ||
+        prev.screenTimeExpiresAt != next.screenTimeExpiresAt) {
+      ScreenTimeService.updateScreenTime(
+        hasScreenTime: next.hasScreenTimeAvailable,
+        expiresAt: next.screenTimeExpiresAt,
+      ).catchError((_) {});
+    }
+  }
+
+  void _startNativeMonitor(ChildProfile child) {
+    ScreenTimeService.startMonitor(
+      childId: child.id,
+      hasScreenTime: child.hasScreenTimeAvailable,
+      expiresAt: child.screenTimeExpiresAt,
+    ).catchError((_) {
+      // Permissions not granted yet — monitor won't run until granted from
+      // the parent permissions screen, which is a valid state.
+    });
+  }
+
+  void _reportDeviceInfo(String childId) {
+    final platform = Platform.isAndroid
+        ? 'android'
+        : Platform.isIOS
+            ? 'ios'
+            : 'other';
+    ref
+        .read(firebaseServiceProvider)
+        .updateDeviceInfo(childId, platform)
+        .catchError((_) {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final child = widget.child;
+    final isLocked = !child.hasScreenTimeAvailable;
+
+    if (isLocked) return _LockedView(child: child);
+    return _UnlockedView(child: child);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// LOCKED view — full screen, PopScope blocks back button
+// ---------------------------------------------------------------------------
+
+class _LockedView extends ConsumerWidget {
+  final ChildProfile child;
+  const _LockedView({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(childProgressStreamProvider(child.id));
+
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1A0533), Color(0xFF2D0B55)],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // ── Header ──────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hi, ${child.name}!',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(color: Colors.white),
+                          ),
+                          const Text(
+                            'Complete your learning to unlock',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      progress.when(
+                        data: (p) => _StreakBadge(streak: p.currentStreak),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(duration: 400.ms),
+
+                const SizedBox(height: 20),
+
+                // ── Learning time ring ───────────────────────────────────
+                CircularPercentIndicator(
+                  radius: 72.0,
+                  lineWidth: 10.0,
+                  percent: 0.0,
+                  animation: true,
+                  animationDuration: 600,
+                  backgroundColor: Colors.white.withValues(alpha: 0.15),
+                  progressColor: const Color(0xFFFF6B6B),
+                  circularStrokeCap: CircularStrokeCap.round,
+                  center: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('🔒', style: TextStyle(fontSize: 22)),
+                      Text(
+                        '${child.learningMinutesRequired}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const Text(
+                        'min',
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 150.ms).scale(
+                      begin: const Offset(0.8, 0.8),
+                      curve: Curves.elasticOut,
+                    ),
+
+                const SizedBox(height: 10),
+
+                Text(
+                  'minutes of learning required',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ).animate().fadeIn(delay: 250.ms),
+
+                const SizedBox(height: 4),
+
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '🎮  Earn ${child.earnedScreenMinutes} minutes of screen time!',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 300.ms),
+
+                const SizedBox(height: 20),
+
+                // ── Subject grid heading ─────────────────────────────────
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Pick a subject to start learning:',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 350.ms),
+
+                const SizedBox(height: 10),
+
+                // ── Subject grid ─────────────────────────────────────────
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _SubjectGrid(child: child),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UNLOCKED view — normal home screen
+// ---------------------------------------------------------------------------
+
+class _UnlockedView extends ConsumerWidget {
+  final ChildProfile child;
+  const _UnlockedView({required this.child});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -167,8 +401,7 @@ class _ChildHome extends ConsumerWidget {
                       children: [
                         Text(
                           'Hi, ${child.name}! 👋',
-                          style:
-                              Theme.of(context).textTheme.headlineMedium,
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
                         Text(
                           'Ready to learn something amazing?',
@@ -180,7 +413,6 @@ class _ChildHome extends ConsumerWidget {
                       ],
                     ),
                     const Spacer(),
-                    // Streak badge
                     progress.when(
                       data: (p) => _StreakBadge(streak: p.currentStreak),
                       loading: () => const SizedBox.shrink(),
@@ -192,23 +424,13 @@ class _ChildHome extends ConsumerWidget {
 
               const SizedBox(height: 16),
 
-              // Screen time banner
-              if (child.hasScreenTimeAvailable)
-                _ScreenTimeBanner(child: child)
-                    .animate()
-                    .fadeIn(delay: 200.ms)
-                    .slideX(begin: -0.1, end: 0),
-
-              // "Time to learn" prompt
-              if (!child.hasScreenTimeAvailable)
-                _LearningPrompt(child: child)
-                    .animate()
-                    .fadeIn(delay: 200.ms)
-                    .scale(begin: const Offset(0.95, 0.95)),
+              _ScreenTimeBanner(child: child)
+                  .animate()
+                  .fadeIn(delay: 200.ms)
+                  .slideX(begin: -0.1, end: 0),
 
               const SizedBox(height: 24),
 
-              // Subject grid heading
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Align(
@@ -224,29 +446,10 @@ class _ChildHome extends ConsumerWidget {
 
               const SizedBox(height: 12),
 
-              // Subject grid
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    children: child.enabledSubjects
-                        .asMap()
-                        .entries
-                        .map((entry) {
-                      final data = ChildHomeScreen._subjectData[entry.value]!;
-                      return _SubjectCard(
-                        subject: entry.value,
-                        emoji: data.emoji,
-                        label: data.label,
-                        description: data.description,
-                        color: data.color,
-                        delay: entry.key * 80,
-                      );
-                    }).toList(),
-                  ),
+                  child: _SubjectGrid(child: child),
                 ),
               ),
 
@@ -258,6 +461,39 @@ class _ChildHome extends ConsumerWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Shared subject grid
+// ---------------------------------------------------------------------------
+
+class _SubjectGrid extends StatelessWidget {
+  final ChildProfile child;
+  const _SubjectGrid({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      children: child.enabledSubjects.asMap().entries.map((entry) {
+        final data = ChildHomeScreen._subjectData[entry.value]!;
+        return _SubjectCard(
+          subject: entry.value,
+          emoji: data.emoji,
+          label: data.label,
+          description: data.description,
+          color: data.color,
+          delay: entry.key * 80,
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared widgets
+// ---------------------------------------------------------------------------
 
 class _StreakBadge extends StatelessWidget {
   final int streak;
@@ -275,7 +511,7 @@ class _StreakBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.warning.withOpacity(0.4),
+            color: AppColors.warning.withValues(alpha: 0.4),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -318,7 +554,7 @@ class _ScreenTimeBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.success.withOpacity(0.4),
+              color: AppColors.success.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -350,57 +586,6 @@ class _ScreenTimeBanner extends StatelessWidget {
   }
 }
 
-class _LearningPrompt extends StatelessWidget {
-  final ChildProfile child;
-  const _LearningPrompt({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.primary, Color(0xFF9B8FFF)],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const Text('🚀', style: TextStyle(fontSize: 32)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Learn for ${child.learningMinutesRequired} minutes',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                        ),
-                  ),
-                  Text(
-                    'Earn ${child.earnedScreenMinutes} minutes of screen time!',
-                    style: const TextStyle(color: Colors.white70, fontSize: 15),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SubjectCard extends StatelessWidget {
   final SubjectType subject;
   final String emoji;
@@ -420,30 +605,28 @@ class _SubjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.go('/child/learn/${subject.name}'),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color, color.withOpacity(0.7)],
-          ),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color, color.withValues(alpha: 0.7)],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => context.go('/child/learn/${subject.name}'),
-            borderRadius: BorderRadius.circular(28),
-            child: Padding(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go('/child/learn/${subject.name}'),
+          borderRadius: BorderRadius.circular(28),
+          child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -473,9 +656,8 @@ class _SubjectCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
     )
-        .animate()
+    .animate()
         .fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms)
         .scale(
           begin: const Offset(0.8, 0.8),

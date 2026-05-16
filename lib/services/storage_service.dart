@@ -4,7 +4,6 @@ import 'package:learnlock/models/app_settings.dart';
 
 class StorageService {
   static const _settingsKey = 'app_settings';
-  static const _activeChildKey = 'active_child_id';
 
   final SharedPreferences _prefs;
 
@@ -24,11 +23,4 @@ class StorageService {
   Future<void> saveSettings(AppSettings settings) async {
     await _prefs.setString(_settingsKey, jsonEncode(settings.toJson()));
   }
-
-  String? get activeChildId => _prefs.getString(_activeChildKey);
-
-  Future<void> setActiveChildId(String id) =>
-      _prefs.setString(_activeChildKey, id);
-
-  Future<void> clearActiveChild() => _prefs.remove(_activeChildKey);
 }

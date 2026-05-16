@@ -2,23 +2,50 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Parents can read/write their own children.
-    // Children can read their own profile (matched by email, which is stored
-    // in googleAccountId, not the Firebase Auth UID).
     match /children/{childId} {
-      allow read: if request.auth.uid == resource.data.parentUid ||
-                     request.auth.token.email == resource.data.googleAccountId;
-      allow write: if request.auth.uid == resource.data.parentUid;
-      allow create: if request.auth.uid == request.resource.data.parentUid;
+      // Any request can read a child profile by ID — needed so the child device
+      // can look up the profile from the QR code *before* signing in.
+      // The profile ID is a UUIDv4, making it effectively unguessable.
+      allow read: if true;
+
+      // Only the parent may create a profile for their own account.
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.parentUid;
+
+      allow update: if request.auth != null && (
+        // Parent can update any field.
+        request.auth.uid == resource.data.parentUid
+
+        // Linked child may update only the three fields the app writes on their
+        // behalf: screenTimeExpiresAt (session completion), lastSeenAt and
+        // devicePlatform (device reporting). Restricting to these fields prevents
+        // a child from editing learning requirements.
+        || (
+          request.auth.token.email == resource.data.googleAccountId
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['screenTimeExpiresAt', 'lastSeenAt', 'devicePlatform'])
+        )
+
+        // Any authenticated user may perform the *initial* account link:
+        // setting googleAccountId from null/empty, and changing only that field.
+        || (
+          (resource.data.googleAccountId == null || resource.data.googleAccountId == '')
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['googleAccountId'])
+        )
+      );
+
+      allow delete: if false;
     }
 
-    // Parents can read/write progress for their children.
-    // Children can read/write their own progress record.
+    // Parents and the linked child can read/write progress records.
     match /progress/{childId} {
-      allow read, write: if request.auth.uid ==
-            get(/databases/(default)/documents/children/$(childId)).data.parentUid ||
-          request.auth.token.email ==
-            get(/databases/(default)/documents/children/$(childId)).data.googleAccountId;
+      allow read, write: if request.auth != null && (
+        request.auth.uid ==
+          get(/databases/(default)/documents/children/$(childId)).data.parentUid
+        || request.auth.token.email ==
+          get(/databases/(default)/documents/children/$(childId)).data.googleAccountId
+      );
     }
 
     // Deny everything else.

@@ -39,9 +39,11 @@ class _RewardScreenState extends ConsumerState<RewardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeChild = ref.watch(activeChildProvider).valueOrNull;
+    // Use the child's own self-profile stream — activeChildProvider queries by
+    // parentUid which is wrong when the signed-in user IS the child.
+    final selfProfile = ref.watch(childSelfProfileStreamProvider).valueOrNull;
     final message = _messages[
-        (activeChild?.name.hashCode ?? 0).abs() % _messages.length];
+        (selfProfile?.name.hashCode ?? 0).abs() % _messages.length];
 
     return Scaffold(
       body: Stack(
@@ -126,7 +128,7 @@ class _RewardScreenState extends ConsumerState<RewardScreen> {
                       const SizedBox(height: 32),
 
                       // Screen time earned
-                      if (activeChild != null)
+                      if (selfProfile != null)
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
@@ -136,7 +138,7 @@ class _RewardScreenState extends ConsumerState<RewardScreen> {
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.success.withOpacity(0.4),
+                                color: AppColors.success.withValues(alpha: 0.4),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -157,7 +159,7 @@ class _RewardScreenState extends ConsumerState<RewardScreen> {
                                 ),
                               ),
                               Text(
-                                '${activeChild.earnedScreenMinutes} minutes',
+                                '${selfProfile.earnedScreenMinutes} minutes',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 36,

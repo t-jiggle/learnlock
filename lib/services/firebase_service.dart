@@ -86,6 +86,13 @@ class FirebaseService {
     });
   }
 
+  Future<void> updateDeviceInfo(String childId, String platform) async {
+    await _children.doc(childId).update({
+      'lastSeenAt': FieldValue.serverTimestamp(),
+      'devicePlatform': platform,
+    });
+  }
+
   Future<ChildProfile?> getChildByGoogleAccountId(String googleAccountId) async {
     final snap = await _children
         .where('googleAccountId', isEqualTo: googleAccountId)

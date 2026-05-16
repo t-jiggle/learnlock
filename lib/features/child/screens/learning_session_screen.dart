@@ -13,14 +13,32 @@ class LearningSessionScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activeChild = ref.watch(activeChildProvider);
-    return activeChild.when(
+    // Use the child's own self-profile stream (looked up by their Google email)
+    // so the session screen works when the child is the signed-in user.
+    final selfProfile = ref.watch(childSelfProfileStreamProvider);
+    return selfProfile.when(
       loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
       data: (child) {
         if (child == null) {
-          return const Scaffold(body: Center(child: Text('No child active')));
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('😕', style: TextStyle(fontSize: 64)),
+                  const SizedBox(height: 16),
+                  const Text('Profile not found'),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => context.go('/child'),
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
         return _Session(child: child, subject: subject);
       },
@@ -66,7 +84,7 @@ class _Session extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [color.withOpacity(0.15), AppColors.background],
+            colors: [color.withValues(alpha: 0.15), AppColors.background],
           ),
         ),
         child: SafeArea(
@@ -187,7 +205,7 @@ class _TopBar extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(0.4),
+                      color: color.withValues(alpha: 0.4),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -210,7 +228,7 @@ class _TopBar extends ConsumerWidget {
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
-              backgroundColor: color.withOpacity(0.2),
+              backgroundColor: color.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: 10,
             ),
@@ -383,11 +401,11 @@ class _ChoiceButtonState extends State<_ChoiceButton> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: widget.color.withOpacity(0.4), width: 2),
+            border: Border.all(color: widget.color.withValues(alpha: 0.4), width: 2),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.12),
+                color: widget.color.withValues(alpha: 0.12),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),

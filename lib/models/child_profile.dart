@@ -19,6 +19,8 @@ class ChildProfile {
   final String? googleAccountId;
   final String? familyLinkId;
   final LinkedAccountType linkedType;
+  final DateTime? lastSeenAt;
+  final String? devicePlatform;
 
   const ChildProfile({
     required this.id,
@@ -35,6 +37,8 @@ class ChildProfile {
     this.googleAccountId,
     this.familyLinkId,
     this.linkedType = LinkedAccountType.manual,
+    this.lastSeenAt,
+    this.devicePlatform,
   });
 
   int get nswYear {
@@ -76,6 +80,8 @@ class ChildProfile {
         'googleAccountId': googleAccountId,
         'familyLinkId': familyLinkId,
         'linkedType': linkedType.name,
+        'lastSeenAt': lastSeenAt != null ? Timestamp.fromDate(lastSeenAt!) : null,
+        'devicePlatform': devicePlatform,
       };
 
   factory ChildProfile.fromFirestore(DocumentSnapshot doc) {
@@ -100,6 +106,8 @@ class ChildProfile {
       linkedType: data['linkedType'] != null
           ? LinkedAccountType.values.byName(data['linkedType'] as String)
           : LinkedAccountType.manual,
+      lastSeenAt: (data['lastSeenAt'] as Timestamp?)?.toDate(),
+      devicePlatform: data['devicePlatform'] as String?,
     );
   }
 
@@ -116,6 +124,8 @@ class ChildProfile {
     String? familyLinkId,
     LinkedAccountType? linkedType,
     bool clearScreenTime = false,
+    DateTime? lastSeenAt,
+    String? devicePlatform,
   }) =>
       ChildProfile(
         id: id,
@@ -135,5 +145,7 @@ class ChildProfile {
         googleAccountId: googleAccountId ?? this.googleAccountId,
         familyLinkId: familyLinkId ?? this.familyLinkId,
         linkedType: linkedType ?? this.linkedType,
+        lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+        devicePlatform: devicePlatform ?? this.devicePlatform,
       );
 }

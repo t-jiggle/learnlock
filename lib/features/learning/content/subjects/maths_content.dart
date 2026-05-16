@@ -74,7 +74,7 @@ class MathsContent {
     final answer = (a + b).toString();
     final choices = _numericChoices(a + b, 4);
     return Question(
-      id: 'maths_add_${a}_${b}',
+      id: 'maths_add_${a}_$b',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -93,7 +93,7 @@ class MathsContent {
     final answer = (a - b).toString();
     final choices = _numericChoices(a - b, 4);
     return Question(
-      id: 'maths_sub_${a}_${b}',
+      id: 'maths_sub_${a}_$b',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -113,7 +113,7 @@ class MathsContent {
     final answer = (a * b).toString();
     final choices = _numericChoices(a * b, 4);
     return Question(
-      id: 'maths_mul_${a}_${b}',
+      id: 'maths_mul_${a}_$b',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -133,7 +133,7 @@ class MathsContent {
     final a = b * answer;
     final choices = _numericChoices(answer, 4);
     return Question(
-      id: 'maths_div_${a}_${b}',
+      id: 'maths_div_${a}_$b',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -157,7 +157,7 @@ class MathsContent {
       final choices = [answer, '$num1/$denom', '$num2/$denom',
           '${sum - 1}/$denom']..shuffle(_random);
       return Question(
-        id: 'maths_frac_${num1}_${num2}_${denom}',
+        id: 'maths_frac_${num1}_${num2}_$denom',
         subject: SubjectType.maths,
         type: QuestionType.multipleChoice,
         difficulty: difficulty,
@@ -174,7 +174,7 @@ class MathsContent {
     final choices = ['$num1/$denom', '$num2/$denom', '${denom ~/ 2}/$denom',
         '1/$denom']..shuffle(_random);
     return Question(
-      id: 'maths_frac_big_${num1}_${num2}_${denom}',
+      id: 'maths_frac_big_${num1}_${num2}_$denom',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -193,7 +193,7 @@ class MathsContent {
     final answer = (a + b).toStringAsFixed(1);
     final choices = _decimalChoices(a + b, 4);
     return Question(
-      id: 'maths_dec_${a}_${b}',
+      id: 'maths_dec_${a}_$b',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -213,7 +213,7 @@ class MathsContent {
     final answer = (whole * pct ~/ 100).toString();
     final choices = _numericChoices(whole * pct ~/ 100, 4);
     return Question(
-      id: 'maths_pct_${pct}_${whole}',
+      id: 'maths_pct_${pct}_$whole',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -233,7 +233,7 @@ class MathsContent {
     final next = start + 4 * step;
     final choices = _numericChoices(next, 4);
     return Question(
-      id: 'maths_seq_${start}_${step}',
+      id: 'maths_seq_${start}_$step',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -252,7 +252,7 @@ class MathsContent {
     final c = a + b;
     final choices = _numericChoices(b, 4);
     return Question(
-      id: 'maths_miss_${a}_${b}',
+      id: 'maths_miss_${a}_$b',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,
@@ -273,7 +273,7 @@ class MathsContent {
     final choices = ['$a is bigger', '$b is bigger', 'They are equal',
         '${a + b} is biggest']..shuffle(_random);
     return Question(
-      id: 'maths_cmp_${a}_${b}',
+      id: 'maths_cmp_${a}_$b',
       subject: SubjectType.maths,
       type: QuestionType.multipleChoice,
       difficulty: difficulty,

@@ -29,7 +29,7 @@ class GeometryContent {
         () => _shapeNames2D(d),
         () => _shapeSides(d),
         () => _shapeProperties(d),
-        () => _3dShapes(d),
+        () => _threeDShapes(d),
         () => _symmetry(d),
       ];
 
@@ -130,7 +130,7 @@ class GeometryContent {
     );
   }
 
-  static Question _3dShapes(DifficultyLevel d) {
+  static Question _threeDShapes(DifficultyLevel d) {
     final shapes = [
       ('6 square faces', 'cube', 'A cube has 6 identical square faces!'),
       ('2 circular faces and 1 curved surface', 'cylinder', 'A cylinder is like a tin can!'),
@@ -229,7 +229,7 @@ class GeometryContent {
       final width = _random.nextInt(6) + 2;
       final p = 2 * (side + width);
       return Question(
-        id: 'geo_perim_${side}_${width}',
+        id: 'geo_perim_${side}_$width',
         subject: SubjectType.geometry,
         type: QuestionType.multipleChoice,
         difficulty: d,
@@ -246,7 +246,7 @@ class GeometryContent {
     final width = _random.nextInt(5) + 2;
     final p = 2 * (side + width);
     return Question(
-      id: 'geo_perim_miss_${side}_${width}',
+      id: 'geo_perim_miss_${side}_$width',
       subject: SubjectType.geometry,
       type: QuestionType.multipleChoice,
       difficulty: d,
@@ -265,7 +265,7 @@ class GeometryContent {
       final w = _random.nextInt(6) + 2;
       final area = l * w;
       return Question(
-        id: 'geo_area_${l}_${w}',
+        id: 'geo_area_${l}_$w',
         subject: SubjectType.geometry,
         type: QuestionType.multipleChoice,
         difficulty: d,
@@ -282,7 +282,7 @@ class GeometryContent {
     final height = _random.nextInt(6) + 2;
     final area = base * height ~/ 2;
     return Question(
-      id: 'geo_tri_area_${base}_${height}',
+      id: 'geo_tri_area_${base}_$height',
       subject: SubjectType.geometry,
       type: QuestionType.multipleChoice,
       difficulty: d,
@@ -301,7 +301,7 @@ class GeometryContent {
     final h = _random.nextInt(4) + 2;
     final vol = l * w * h;
     return Question(
-      id: 'geo_vol_${l}_${w}_${h}',
+      id: 'geo_vol_${l}_${w}_$h',
       subject: SubjectType.geometry,
       type: QuestionType.multipleChoice,
       difficulty: d,
@@ -319,7 +319,7 @@ class GeometryContent {
     final y = _random.nextInt(8) + 1;
     final items = [
       ('A point is at ($x, $y). What is its x-coordinate?', '$x',
-          ['$x', '${y}', '${x + y}', '${(x * y).clamp(0, 20)}'],
+          ['$x', '$y', '${x + y}', '${(x * y).clamp(0, 20)}'],
           'The x-coordinate is always the first number in the pair ($x, $y)!'),
       ('A point is at ($x, $y). What is its y-coordinate?', '$y',
           ['$y', '$x', '${x + y}', '${(x * y).clamp(0, 20)}'],
@@ -328,7 +328,7 @@ class GeometryContent {
     final item = items[_random.nextInt(items.length)];
     final choices = List<String>.from(item.$3)..shuffle(_random);
     return Question(
-      id: 'geo_coord_${x}_${y}',
+      id: 'geo_coord_${x}_$y',
       subject: SubjectType.geometry,
       type: QuestionType.multipleChoice,
       difficulty: d,

@@ -60,8 +60,8 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: allGranted
-                        ? AppColors.success.withOpacity(0.12)
-                        : AppColors.warning.withOpacity(0.12),
+                        ? AppColors.success.withValues(alpha: 0.12)
+                        : AppColors.warning.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: allGranted ? AppColors.success : AppColors.warning,
@@ -178,7 +178,7 @@ class _PermissionCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
+                    color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: color, size: 26),

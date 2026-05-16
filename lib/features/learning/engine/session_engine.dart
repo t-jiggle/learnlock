@@ -179,8 +179,10 @@ class SessionEngine extends StateNotifier<SessionState> {
     _questionStartTime = DateTime.now().millisecondsSinceEpoch;
 
     if (nextIndex >= state.questions.length) {
-      // Load more questions to keep session going until timer expires
+      // Load more questions to keep session going until timer expires.
+      // Set loading phase immediately so the UI doesn't briefly show blank feedback.
       state = state.copyWith(
+        phase: SessionPhase.loading,
         currentIndex: nextIndex,
         clearFeedback: true,
       );
@@ -204,6 +206,8 @@ class SessionEngine extends StateNotifier<SessionState> {
       progress: subjectProgress,
       count: 8,
     );
+    // Timer may have fired and completed the session while we were awaiting.
+    if (state.phase == SessionPhase.complete) return;
     _questionStartTime = DateTime.now().millisecondsSinceEpoch;
     state = state.copyWith(
       phase: SessionPhase.question,
